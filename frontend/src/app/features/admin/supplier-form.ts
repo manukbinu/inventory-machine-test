@@ -17,16 +17,21 @@ import { ApiService } from '../../core/services/api.service';
     MatButtonModule, MatIconModule, MatCheckboxModule
   ],
   template: `
-    <div class="form-page">
-      <div class="form-header">
-        <button mat-stroked-button (click)="back()">
-          <mat-icon>arrow_back</mat-icon> Back
+    <div class="form-bg">
+      <div class="back-row">
+        <button mat-stroked-button class="back-btn" (click)="back()">
+          <mat-icon>arrow_back</mat-icon> Suppliers
         </button>
-        <h2 style="margin:0">{{ isEdit ? 'Edit Supplier' : 'Add Supplier' }}</h2>
       </div>
 
-      <mat-card class="form-card">
+      <div class="form-card">
+        <div class="card-title">
+          <mat-icon>{{ isEdit ? 'edit' : 'person_add' }}</mat-icon>
+          <h2>{{ isEdit ? 'Edit Supplier' : 'Add New Supplier' }}</h2>
+        </div>
+
         <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="section-label"><mat-icon>badge</mat-icon> Personal Info</div>
           <div class="row-4">
             <mat-form-field appearance="outline">
               <mat-label>Full Name</mat-label>
@@ -46,6 +51,7 @@ import { ApiService } from '../../core/services/api.service';
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Phone</mat-label>
+              <mat-icon matPrefix>phone</mat-icon>
               <input matInput formControlName="phoneNumber">
             </mat-form-field>
           </div>
@@ -53,6 +59,7 @@ import { ApiService } from '../../core/services/api.service';
           <div class="row-last">
             <mat-form-field appearance="outline">
               <mat-label>Location</mat-label>
+              <mat-icon matPrefix>location_on</mat-icon>
               <input matInput formControlName="location">
             </mat-form-field>
             @if (isEdit) {
@@ -64,27 +71,39 @@ import { ApiService } from '../../core/services/api.service';
 
           @if (error) { <p class="form-error">{{ error }}</p> }
           <div class="form-actions">
-            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+            <button mat-raised-button class="save-btn" type="submit" [disabled]="form.invalid">
+              <mat-icon>{{ isEdit ? 'save' : 'person_add' }}</mat-icon>
               {{ isEdit ? 'Save Changes' : 'Create Supplier' }}
             </button>
             <button mat-stroked-button type="button" (click)="back()">Cancel</button>
           </div>
         </form>
-      </mat-card>
+      </div>
     </div>
   `,
   styles: [`
-    .form-page { padding:24px; box-sizing:border-box; width:100%; }
-    .form-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
-    .form-card { padding:24px; border-left:4px solid #1976d2; width:100%; box-sizing:border-box; }
-    .row-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px; }
-    .row-last { display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px; margin-bottom:16px; align-items:center; }
-    .checkbox-cell { display:flex; align-items:center; gap:8px; padding-top:4px; }
-    .form-error { color:red; font-size:.85rem; margin:4px 0; }
-    .form-actions { display:flex; gap:12px; margin-top:8px; }
-    mat-form-field { width:100%; }
-    @media(max-width:900px) { .row-4 { grid-template-columns:1fr 1fr; } .row-last { grid-template-columns:1fr 1fr; } }
-    @media(max-width:500px) { .row-4,.row-last { grid-template-columns:1fr; } }
+    .form-bg { background: #f0f2f8; min-height: calc(100vh - 64px); padding: 28px 24px; box-sizing: border-box; }
+    .back-row { max-width: 760px; margin: 0 auto 16px; }
+    .back-btn { border-color: #c5cae9 !important; color: #3f51b5 !important; border-radius: 8px !important; }
+    .form-card {
+      max-width: 760px; margin: 0 auto;
+      background: #fff; border-radius: 16px; border-left: 5px solid #3f51b5;
+      box-shadow: 0 4px 20px rgba(63,81,181,.15); padding: 28px 32px;
+    }
+    .card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+    .card-title mat-icon { color: #3f51b5; }
+    .card-title h2 { margin: 0; font-size: 1.25rem; font-weight: 800; }
+    .section-label { display: flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; color: #3f51b5; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    .section-label mat-icon { font-size: 15px; height: 15px; width: 15px; }
+    mat-form-field { width: 100%; }
+    .row-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 8px; }
+    .row-last { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 16px; align-items: center; }
+    .checkbox-cell { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
+    .form-error { color: #f44336; font-size: .85rem; margin: 4px 0 12px; }
+    .form-actions { display: flex; gap: 12px; margin-top: 8px; }
+    .save-btn { background: #3f51b5 !important; color: #fff !important; border-radius: 8px !important; }
+    @media (max-width: 900px) { .row-4 { grid-template-columns: 1fr 1fr; } .row-last { grid-template-columns: 1fr 1fr; } .form-card { padding: 20px 16px; } }
+    @media (max-width: 500px) { .row-4, .row-last { grid-template-columns: 1fr; } }
   `]
 })
 export class SupplierFormComponent implements OnInit {

@@ -39,29 +39,61 @@ const STATUS_CHIP: Record<string, string> = {
     MatButtonModule, MatIconModule, MatExpansionModule, MatDividerModule,
     MatFormFieldModule, MatInputModule, MatSelectModule, MatDatepickerModule, MatNativeDateModule],
   styles: [`
-    mat-expansion-panel { margin-bottom:8px; }
-    mat-panel-description { flex:1; }
-    .customer-info { display:flex; flex-direction:column; gap:6px; background:#f9f9f9; border-radius:6px; padding:12px 16px; margin-bottom:16px; }
+    .page-banner {
+      background: linear-gradient(135deg, #1a237e, #3f51b5);
+      padding: 24px 28px; display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; color: #fff;
+    }
+    .page-banner h1 { margin: 0; font-size: 1.6rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .page-banner h1 mat-icon { color: #ffc107; }
+    .page-banner p { margin: 4px 0 0; font-size: .88rem; opacity: .8; color: #fff; }
+    .banner-actions { display: flex; gap: 10px; }
+    .export-btn { border-color: rgba(255,255,255,.5) !important; color: #fff !important; border-radius: 8px !important; }
+    .page-body { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .filter-bar-card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(63,81,181,.10); }
+    mat-expansion-panel { margin-bottom: 10px; border-radius: 12px !important; box-shadow: 0 2px 8px rgba(63,81,181,.10) !important; }
+    mat-panel-description { flex: 1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .order-status-chip { font-size: .73rem; font-weight: 700; padding: 3px 12px; border-radius: 20px; }
+    .chip-pending   { background: #fff3e0; color: #e65100; }
+    .chip-confirmed { background: #e8eaf6; color: #283593; }
+    .chip-shipped   { background: #f3e5f5; color: #4a148c; }
+    .chip-delivered { background: #e8f5e9; color: #2e7d32; }
+    .chip-cancelled { background: #ffebee; color: #b71c1c; }
+    .customer-info { display:flex; flex-direction:column; gap:6px; background:#f8f9ff; border-radius:10px; padding:14px 16px; margin-bottom:16px; }
     .customer-info div { display:flex; align-items:flex-start; gap:8px; font-size:.9rem; }
-    .info-icon { font-size:18px; height:18px; width:18px; color:#555; flex-shrink:0; margin-top:1px; }
+    .info-icon { font-size:18px; height:18px; width:18px; color:#3f51b5; flex-shrink:0; margin-top:1px; }
     .wrap-text { white-space:pre-wrap; word-break:break-word; }
     .fulfillment-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; margin-bottom:16px; }
-    .fulfillment-card { border:1px solid #e0e0e0; border-radius:8px; padding:10px 14px; }
+    .fulfillment-card { border:1px solid #e8eaf6; border-radius:10px; padding:12px 14px; background:#fff; }
     .fulfillment-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-    .f-badge { font-size:.75rem; font-weight:600; padding:2px 8px; border-radius:10px; color:#fff; }
+    .f-badge { font-size:.73rem; font-weight:700; padding:3px 10px; border-radius:20px; color:#fff; }
     .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
+    .all-shipped-banner { background:#e8f5e9; border-left:4px solid #2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:12px; font-size:.85rem; color:#2e7d32; }
+    .status-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; padding-top:12px; border-top:1px solid #f0f2f8; }
+    .status-label { font-weight:600; font-size:.85rem; color:#666; }
+    .btn-confirm  { background: #3f51b5 !important; color: #fff !important; border-radius: 8px !important; }
+    .btn-ship     { background: #7b1fa2 !important; color: #fff !important; border-radius: 8px !important; }
+    .btn-deliver  { background: #2e7d32 !important; color: #fff !important; border-radius: 8px !important; }
+    .btn-cancel   { background: #f44336 !important; color: #fff !important; border-radius: 8px !important; }
+    .no-more { color: #888; font-size: .82rem; margin-top: 4px; }
+    @media (max-width: 768px) { .page-body { padding: 16px 10px; } }
   `],
   template: `
-    <div style="padding:24px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <h2 style="margin:0">Order Management</h2>
-        <button mat-stroked-button (click)="exportCsv()">
+    <div class="page-banner">
+      <div>
+        <h1><mat-icon>receipt_long</mat-icon> Order Management</h1>
+        <p>{{ filtered().length }} order{{ filtered().length !== 1 ? 's' : '' }} shown</p>
+      </div>
+      <div class="banner-actions">
+        <button mat-stroked-button class="export-btn" (click)="exportCsv()">
           <mat-icon>download</mat-icon> Export CSV
         </button>
       </div>
-
+    </div>
+    <div class="page-body">
       <!-- Filters -->
-      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <div class="filter-bar-card">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
         <mat-form-field appearance="outline" style="flex:1;min-width:200px">
           <mat-label>Search customer</mat-label>
           <input matInput (input)="searchQ.set($any($event.target).value)" placeholder="Name or email…">
@@ -88,20 +120,27 @@ const STATUS_CHIP: Record<string, string> = {
         @if (fromDate() || toDate()) {
           <button mat-icon-button matTooltip="Clear dates" (click)="clearDates()"><mat-icon>clear</mat-icon></button>
         }
+        </div>
       </div>
 
-      @if (filtered().length === 0) { <p>No orders found.</p> }
+      @if (filtered().length === 0) {
+        <div class="empty-state">
+          <mat-icon>receipt_long</mat-icon>
+          <h3>No orders found</h3>
+          <p>Try adjusting your filters.</p>
+        </div>
+      }
 
       <mat-accordion multi>
         @for (o of filtered(); track o.id) {
           <mat-expansion-panel (opened)="loadDetail(o.id)">
             <mat-expansion-panel-header>
-              <mat-panel-title style="flex:0 0 120px">Order #{{ o.id }}</mat-panel-title>
-              <mat-panel-description style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+              <mat-panel-title style="flex:0 0 90px"><strong style="color:#3f51b5">#{{ o.id }}</strong></mat-panel-title>
+              <mat-panel-description>
                 <strong>{{ o.customerName || o.customerEmail }}</strong>
-                <span>{{ o.createdAt | date:'short' }}</span>
-                <mat-chip [color]="STATUS_CHIP[o.status]" highlighted style="margin-left:auto">{{ o.status }}</mat-chip>
-                <strong>₹{{ o.total.toFixed(2) }}</strong>
+                <span style="color:#888;font-size:.82rem">{{ o.createdAt | date:'dd MMM yyyy' }}</span>
+                <span class="order-status-chip" [class]="statusClass(o.status)">{{ o.status }}</span>
+                <strong style="margin-left:auto;color:#3f51b5">₹{{ o.total.toFixed(2) }}</strong>
                 <button mat-icon-button matTooltip="Print order" (click)="$event.stopPropagation(); printOrder(o)">
                   <mat-icon>print</mat-icon>
                 </button>
@@ -109,7 +148,6 @@ const STATUS_CHIP: Record<string, string> = {
             </mat-expansion-panel-header>
 
             @if (detail()[o.id]) {
-              <!-- Customer info -->
               <div class="customer-info">
                 <div><mat-icon class="info-icon">person</mat-icon><span>{{ detail()[o.id]!.customerName || detail()[o.id]!.customerEmail }}</span></div>
                 <div><mat-icon class="info-icon">email</mat-icon><span>{{ detail()[o.id]!.customerEmail }}</span></div>
@@ -121,33 +159,29 @@ const STATUS_CHIP: Record<string, string> = {
                 }
               </div>
 
-              <!-- Fulfillment status per supplier -->
               @if (detail()[o.id]!.fulfillments.length > 0) {
-                <p style="font-weight:600;margin:0 0 10px;font-size:.9rem">Supplier Fulfillments</p>
+                <p style="font-weight:700;margin:0 0 10px;font-size:.85rem;color:#3f51b5">Supplier Fulfillments</p>
                 <div class="fulfillment-grid">
                   @for (f of detail()[o.id]!.fulfillments; track f.supplierId) {
                     <div class="fulfillment-card">
                       <div class="fulfillment-header">
-                        <span style="font-weight:500;font-size:.85rem">{{ f.supplierName || f.supplierEmail }}</span>
+                        <span style="font-weight:600;font-size:.85rem">{{ f.supplierName || f.supplierEmail }}</span>
                         <span class="f-badge" [style.background]="FULFILLMENT_COLOR[f.status]">{{ f.status }}</span>
                       </div>
-                      <div style="font-size:.78rem;color:#888">{{ f.supplierEmail }}</div>
+                      <div style="font-size:.75rem;color:#888">{{ f.supplierEmail }}</div>
                     </div>
                   }
                 </div>
                 @if (allFulfillmentsShipped(o.id)) {
-                  <div style="background:#e8f5e9;border-radius:6px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#2e7d32">
-                    ✓ All suppliers have shipped — order is ready to deliver.
-                  </div>
+                  <div class="all-shipped-banner">✓ All suppliers have shipped — order is ready to deliver.</div>
                 }
                 <mat-divider style="margin-bottom:16px"></mat-divider>
               }
 
-              <!-- Items table -->
               <table mat-table [dataSource]="detail()[o.id]!.items" style="width:100%;margin-bottom:16px">
                 <ng-container matColumnDef="product">
                   <th mat-header-cell *matHeaderCellDef>Product</th>
-                  <td mat-cell *matCellDef="let i">{{ i.productName }}</td>
+                  <td mat-cell *matCellDef="let i"><strong>{{ i.productName }}</strong></td>
                 </ng-container>
                 <ng-container matColumnDef="qty">
                   <th mat-header-cell *matHeaderCellDef>Qty</th>
@@ -159,32 +193,26 @@ const STATUS_CHIP: Record<string, string> = {
                 </ng-container>
                 <ng-container matColumnDef="subtotal">
                   <th mat-header-cell *matHeaderCellDef>Subtotal</th>
-                  <td mat-cell *matCellDef="let i">₹{{ i.subtotal.toFixed(2) }}</td>
+                  <td mat-cell *matCellDef="let i" style="font-weight:700;color:#3f51b5">₹{{ i.subtotal.toFixed(2) }}</td>
                 </ng-container>
                 <tr mat-header-row *matHeaderRowDef="cols"></tr>
                 <tr mat-row *matRowDef="let row; columns: cols;"></tr>
               </table>
             } @else {
-              <p style="color:#888;font-size:.85rem">Loading…</p>
+              <div class="skeleton skeleton-row" style="margin:12px 0"></div>
             }
 
-            <!-- Admin status controls -->
-            @if (nextStatuses(o.status).length > 0) {
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
-                <span style="font-weight:500">Change status:</span>
-                @for (next of nextStatuses(o.status); track next) {
-                  <button mat-raised-button [color]="next === 'Cancelled' ? 'warn' : 'primary'"
-                    (click)="changeStatus(o, next)">→ {{ next }}</button>
-                }
-              </div>
-              @if (o.status === 'Confirmed') {
-                <p style="font-size:.78rem;color:#888;margin:6px 0 0">
-                  Order will auto-advance to <strong>Shipped</strong> once all suppliers mark their fulfillment as Shipped.
-                </p>
+            <div class="status-controls">
+              <span class="status-label">Change status:</span>
+              @for (next of nextStatuses(o.status); track next) {
+                <button mat-raised-button [class]="statusBtnClass(next)" (click)="changeStatus(o, next)">
+                  <mat-icon>arrow_forward</mat-icon> {{ next }}
+                </button>
               }
-            } @else {
-              <p style="color:#888;font-size:.85rem;margin-top:4px">No further status changes available.</p>
-            }
+              @if (nextStatuses(o.status).length === 0) {
+                <span class="no-more">No further status changes available.</span>
+              }
+            </div>
           </mat-expansion-panel>
         }
       </mat-accordion>
@@ -310,6 +338,16 @@ export class OrderManagementComponent implements OnInit {
       </body></html>
     `);
     win.document.close();
+  }
+
+  statusClass(s: string): string {
+    const map: Record<string, string> = { Pending: 'chip-pending', Confirmed: 'chip-confirmed', Shipped: 'chip-shipped', Delivered: 'chip-delivered', Cancelled: 'chip-cancelled' };
+    return `order-status-chip ${map[s] ?? ''}`;
+  }
+
+  statusBtnClass(next: string): string {
+    const map: Record<string, string> = { Confirmed: 'btn-confirm', Shipped: 'btn-ship', Delivered: 'btn-deliver', Cancelled: 'btn-cancel' };
+    return map[next] ?? 'btn-confirm';
   }
 
   changeStatus(order: OrderListItem, newStatus: string) {

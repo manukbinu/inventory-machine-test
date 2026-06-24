@@ -4,4 +4,4 @@ public record RegisterRequest(string Name, string Email, string Password, string
 
 public record LoginRequest(string Email, string Password);
 
-public record AuthResponse(string Token, string Role, int UserId, string Name, string Email, bool IsApproved);
+public record AuthResponse(string Token, string Role, int UserId, string Name, string Email, bool IsApproved, string? PhoneNumber, string? Location);

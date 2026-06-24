@@ -5,6 +5,8 @@ export interface AuthResponse {
   name: string;
   email: string;
   isApproved: boolean;
+  phoneNumber?: string;
+  location?: string;
 }
 
 export interface User {

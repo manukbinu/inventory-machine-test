@@ -43,6 +43,14 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  updateUser(patch: Partial<AuthResponse>) {
+    const current = this._user();
+    if (!current) return;
+    const updated = { ...current, ...patch };
+    localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    this._user.set(updated);
+  }
+
   private setSession(res: AuthResponse) {
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(USER_KEY, JSON.stringify(res));

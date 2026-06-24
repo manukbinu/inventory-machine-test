@@ -16,70 +16,77 @@ import { Notification } from '../../core/models/models';
   imports: [DatePipe, MatTableModule, MatPaginatorModule, MatButtonModule,
     MatIconModule, MatChipsModule, MatTooltipModule],
   template: `
-    <div style="padding:24px;max-width:900px;margin:0 auto">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <h2 style="margin:0">Notifications</h2>
-        <button mat-stroked-button (click)="markAll()" [disabled]="unreadCount() === 0">
-          <mat-icon>done_all</mat-icon> Mark all as read
-        </button>
+    <!-- Banner -->
+    <div class="page-banner">
+      <div style="display:flex;align-items:center;gap:12px">
+        <h1><mat-icon>notifications</mat-icon> Notifications</h1>
+        @if (unreadCount() > 0) {
+          <span class="unread-badge">{{ unreadCount() }} unread</span>
+        }
+      </div>
+      <button mat-stroked-button class="mark-all-btn" (click)="markAll()" [disabled]="unreadCount() === 0">
+        <mat-icon>done_all</mat-icon> Mark all as read
+      </button>
+    </div>
+
+    <div class="page-container">
+      <div class="table-wrapper">
+        <table mat-table [dataSource]="dataSource" class="notif-table">
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef style="width:4px;padding:0"></th>
+            <td mat-cell *matCellDef="let n" style="padding:0 4px">
+              @if (!n.isRead) { <div class="unread-dot"></div> }
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let n">
+              <span class="type-chip" [style.background]="typeColor(n.type)">
+                <mat-icon class="type-icon">{{ typeIcon(n.type) }}</mat-icon>
+                {{ typeLabel(n.type) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="message">
+            <th mat-header-cell *matHeaderCellDef>Message</th>
+            <td mat-cell *matCellDef="let n" class="message-cell"
+              (click)="open(n)" [class.unread-text]="!n.isRead">
+              {{ n.message }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let n" class="date-cell">{{ n.createdAt | date:'dd MMM yy, h:mm a' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let n" style="white-space:nowrap">
+              @if (!n.isRead) {
+                <button mat-icon-button class="btn-read" matTooltip="Mark as read" (click)="markOne(n)">
+                  <mat-icon>mark_email_read</mat-icon>
+                </button>
+              }
+              <button mat-icon-button class="btn-delete" matTooltip="Delete" (click)="remove(n)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="cols"></tr>
+          <tr mat-row *matRowDef="let r; columns: cols;" [class.unread-row]="!r.isRead"></tr>
+        </table>
       </div>
 
-      <table mat-table [dataSource]="dataSource" class="mat-elevation-z2 full-width">
-
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef style="width:8px;padding:0"></th>
-          <td mat-cell *matCellDef="let n" style="width:8px;padding:0">
-            @if (!n.isRead) { <div class="unread-dot"></div> }
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>Type</th>
-          <td mat-cell *matCellDef="let n">
-            <mat-chip [style.background]="typeColor(n.type)" style="color:#fff;font-size:.75rem">
-              <mat-icon style="font-size:14px;width:14px;height:14px;margin-right:4px">{{ typeIcon(n.type) }}</mat-icon>
-              {{ typeLabel(n.type) }}
-            </mat-chip>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="message">
-          <th mat-header-cell *matHeaderCellDef>Message</th>
-          <td mat-cell *matCellDef="let n" style="cursor:pointer;white-space:normal;line-height:1.4"
-            (click)="open(n)" [style.font-weight]="n.isRead ? 'normal' : '600'">
-            {{ n.message }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let n" style="white-space:nowrap;color:#666;font-size:.85rem">
-            {{ n.createdAt | date:'medium' }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let n" style="white-space:nowrap">
-            @if (!n.isRead) {
-              <button mat-icon-button matTooltip="Mark as read" (click)="markOne(n)">
-                <mat-icon style="color:#1976d2">mark_email_read</mat-icon>
-              </button>
-            }
-            <button mat-icon-button color="warn" matTooltip="Delete" (click)="remove(n)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="cols"></tr>
-        <tr mat-row *matRowDef="let r; columns: cols;" [class.unread-row]="!r.isRead"></tr>
-      </table>
-
       @if (dataSource.data.length === 0) {
-        <div style="padding:32px;text-align:center;color:#999">
-          <mat-icon style="font-size:48px;width:48px;height:48px;opacity:.3">notifications_off</mat-icon>
-          <p>No notifications yet.</p>
+        <div class="empty-state">
+          <mat-icon>notifications_off</mat-icon>
+          <h3>No notifications</h3>
+          <p>You're all caught up!</p>
         </div>
       }
 
@@ -87,10 +94,34 @@ import { Notification } from '../../core/models/models';
     </div>
   `,
   styles: [`
-    .full-width { width: 100%; }
-    .unread-dot { width:8px; height:8px; border-radius:50%; background:#1976d2; }
-    .unread-row { background:rgba(25,118,210,.04); }
-    mat-paginator { border-top:1px solid rgba(0,0,0,.12); }
+    .page-banner {
+      background: linear-gradient(135deg, #1a237e, #3f51b5);
+      padding: 20px 28px; display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; color: #fff;
+    }
+    .page-banner h1 { margin: 0; font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .page-banner h1 mat-icon { color: #ffc107; }
+    .unread-badge { background: #ffc107; color: #1a1a2e; font-size: .75rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
+    .mark-all-btn { border-color: rgba(255,255,255,.5) !important; color: #fff !important; border-radius: 8px !important; }
+
+    .page-container { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .table-wrapper { overflow-x: auto; border-radius: 12px; box-shadow: 0 2px 8px rgba(63,81,181,.10); }
+    .notif-table { width: 100%; background: #fff; }
+
+    .unread-row { background: #f0f4ff !important; border-left: 4px solid #3f51b5; }
+    .unread-dot { width: 9px; height: 9px; border-radius: 50%; background: #3f51b5; box-shadow: 0 0 4px rgba(63,81,181,.4); }
+    .unread-text { font-weight: 700; }
+
+    .type-chip { display: inline-flex; align-items: center; gap: 4px; color: #fff; font-size: .73rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .type-icon { font-size: 13px !important; height: 13px !important; width: 13px !important; }
+
+    .message-cell { cursor: pointer; white-space: normal; line-height: 1.5; font-size: .9rem; }
+    .date-cell { white-space: nowrap; color: #888; font-size: .82rem; }
+
+    .btn-read { color: #3f51b5 !important; }
+    .btn-delete { color: #f44336 !important; }
+
+    @media (max-width: 600px) { .page-container { padding: 16px 10px; } }
   `]
 })
 export class NotificationsComponent implements OnInit, AfterViewInit {

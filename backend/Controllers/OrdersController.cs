@@ -89,13 +89,30 @@ public class OrdersController(AppDbContext db, OrderService orderService, Curren
                 f.SupplierId, f.Supplier.Name, f.Supplier.Email, f.Status.ToString())).ToList()));
     }
 
+    [HttpPost("{id}/cancel")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> CancelOrder(int id)
+    {
+        var userId = user.RequireUserId();
+        var order = await db.Orders.FirstOrDefaultAsync(o => o.Id == id && o.CustomerId == userId);
+        if (order == null) return NotFound("Order not found.");
+        if (order.Status.ToString() != "Pending")
+            return BadRequest("Only pending orders can be cancelled.");
+        try
+        {
+            await orderService.UpdateStatusAsync(id, "Cancelled", userId);
+            return Ok(new { message = "Order cancelled." });
+        }
+        catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+    }
+
     [HttpPatch("{id}/status")]
     [Authorize(Policy = "AdminOrSupplier")]
     public async Task<IActionResult> UpdateStatus(int id, UpdateOrderStatusRequest req)
     {
         try
         {
-            await orderService.UpdateStatusAsync(id, req.Status, user.RequireUserId());
+            await orderService.UpdateStatusAsync(id, req.Status, user.RequireUserId(), user.Role ?? "Admin");
             return Ok(new { message = "Status updated." });
         }
         catch (KeyNotFoundException ex) { return NotFound(ex.Message); }

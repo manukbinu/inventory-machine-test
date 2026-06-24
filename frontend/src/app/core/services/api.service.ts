@@ -38,6 +38,9 @@ export class ApiService {
   }
   getOrders() { return this.http.get<OrderListItem[]>(`${API}/orders`); }
   getOrder(id: number) { return this.http.get<Order>(`${API}/orders/${id}`); }
+  cancelOrder(id: number) {
+    return this.http.post(`${API}/orders/${id}/cancel`, {});
+  }
   updateOrderStatus(id: number, status: string) {
     return this.http.patch(`${API}/orders/${id}/status`, { status });
   }

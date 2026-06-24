@@ -13,7 +13,14 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     </main>
   `,
   styles: [`
-    .main-content { padding: 24px; max-width: 1200px; margin: 0 auto; }
+    .main-content {
+      min-height: calc(100vh - 64px);
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
   `]
 })
 export class App {}

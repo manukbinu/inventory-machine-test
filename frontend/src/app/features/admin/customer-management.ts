@@ -24,18 +24,24 @@ import { User } from '../../core/models/models';
     MatCardModule, MatTooltipModule, MatCheckboxModule, MatDividerModule
   ],
   template: `
-    <div style="padding:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
-        <h2 style="margin:0">Customer Management</h2>
-        <button mat-stroked-button (click)="exportCsv()">
+    <!-- Page Banner -->
+    <div class="page-banner">
+      <div>
+        <h1><mat-icon>people</mat-icon> Customer Management</h1>
+        <p>{{ dataSource.data.length }} customer{{ dataSource.data.length !== 1 ? 's' : '' }} registered</p>
+      </div>
+      <div class="banner-actions">
+        <button mat-stroked-button class="export-btn" (click)="exportCsv()">
           <mat-icon>download</mat-icon> Export CSV
         </button>
       </div>
+    </div>
 
-      <!-- EDIT FORM -->
+    <div class="page-container">
+      <!-- Edit Form -->
       @if (editingUser) {
-        <mat-card style="margin-bottom:24px;padding:16px;border-left:4px solid #7b1fa2">
-          <h3>Edit Customer — <span style="color:#7b1fa2">{{ editingUser.email }}</span></h3>
+        <div class="edit-card">
+          <h3><mat-icon>edit</mat-icon> Edit Customer — {{ editingUser.email }}</h3>
           <form [formGroup]="editForm" (ngSubmit)="saveEdit()">
             <div class="row-4">
               <mat-form-field appearance="outline">
@@ -70,108 +76,137 @@ import { User } from '../../core/models/models';
             </div>
             @if (editError) { <p class="form-error">{{ editError }}</p> }
             <div style="display:flex;gap:8px">
-              <button mat-raised-button color="primary" type="submit" [disabled]="editForm.invalid">Save Changes</button>
-              <button mat-stroked-button type="button" (click)="cancelEdit()">Cancel</button>
+              <button mat-raised-button class="save-edit-btn" type="submit" [disabled]="editForm.invalid">
+                <mat-icon>save</mat-icon> Save Changes
+              </button>
+              <button mat-stroked-button type="button" (click)="cancelEdit()">
+                <mat-icon>close</mat-icon> Cancel
+              </button>
             </div>
           </form>
-        </mat-card>
+        </div>
       }
 
-      <mat-divider style="margin-bottom:16px"></mat-divider>
+      <!-- Skeleton -->
+      @if (loading()) {
+        @for (_ of skeletonRows; track $index) {
+          <div class="skeleton skeleton-row"></div>
+        }
+      } @else {
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input class="filter-input" placeholder="🔍 Name…" (input)="applyFilter('name', $any($event.target).value)">
+          <input class="filter-input" placeholder="Email…" (input)="applyFilter('email', $any($event.target).value)">
+          <input class="filter-input" placeholder="Phone…" (input)="applyFilter('phone', $any($event.target).value)">
+          <input class="filter-input" placeholder="Address…" (input)="applyFilter('address', $any($event.target).value)">
+          <select class="filter-input filter-select" (change)="applyFilter('canLogin', $any($event.target).value)">
+            <option value="">Login: All</option>
+            <option value="yes">Enabled</option>
+            <option value="no">Disabled</option>
+          </select>
+        </div>
 
-      <!-- CUSTOMER TABLE -->
-      <table mat-table [dataSource]="dataSource" class="mat-elevation-z2 full-width">
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="dataSource" class="customers-table">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let u"><strong>{{ u.name || '—' }}</strong></td>
+            </ng-container>
+            <ng-container matColumnDef="email">
+              <th mat-header-cell *matHeaderCellDef>Email</th>
+              <td mat-cell *matCellDef="let u" class="muted-cell">{{ u.email }}</td>
+            </ng-container>
+            <ng-container matColumnDef="phone">
+              <th mat-header-cell *matHeaderCellDef>Phone</th>
+              <td mat-cell *matCellDef="let u" class="muted-cell">{{ u.phoneNumber || '—' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="address">
+              <th mat-header-cell *matHeaderCellDef>Address</th>
+              <td mat-cell *matCellDef="let u" class="muted-cell" style="max-width:180px;white-space:normal">{{ u.location || '—' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="joined">
+              <th mat-header-cell *matHeaderCellDef>Joined</th>
+              <td mat-cell *matCellDef="let u" class="muted-cell">{{ u.createdAt | date:'dd MMM yyyy' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="canLogin">
+              <th mat-header-cell *matHeaderCellDef>Login</th>
+              <td mat-cell *matCellDef="let u">
+                <mat-slide-toggle [checked]="u.canLogin" (change)="toggleLogin(u, $event.checked)"></mat-slide-toggle>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let u" class="actions-cell">
+                <button mat-icon-button class="action-edit" matTooltip="Edit customer" (click)="startEdit(u)"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button class="action-print" matTooltip="Print" (click)="printRow(u)"><mat-icon>print</mat-icon></button>
+                <button mat-icon-button class="action-delete" matTooltip="Delete" (click)="deleteUser(u.id)"><mat-icon>delete</mat-icon></button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="cols"></tr>
+            <tr mat-row *matRowDef="let row; columns: cols;" [class.editing-row]="row.id === editingUser?.id"></tr>
+          </table>
+        </div>
 
-        <!-- Filter row -->
-        <ng-container matColumnDef="filter-name">
-          <th mat-header-cell *matHeaderCellDef><input class="col-filter" placeholder="Name…" (input)="applyFilter('name', $any($event.target).value)"></th>
-        </ng-container>
-        <ng-container matColumnDef="filter-email">
-          <th mat-header-cell *matHeaderCellDef><input class="col-filter" placeholder="Email…" (input)="applyFilter('email', $any($event.target).value)"></th>
-        </ng-container>
-        <ng-container matColumnDef="filter-phone">
-          <th mat-header-cell *matHeaderCellDef><input class="col-filter" placeholder="Phone…" (input)="applyFilter('phone', $any($event.target).value)"></th>
-        </ng-container>
-        <ng-container matColumnDef="filter-address">
-          <th mat-header-cell *matHeaderCellDef><input class="col-filter" placeholder="Address…" (input)="applyFilter('address', $any($event.target).value)"></th>
-        </ng-container>
-        <ng-container matColumnDef="filter-joined"><th mat-header-cell *matHeaderCellDef></th></ng-container>
-        <ng-container matColumnDef="filter-canLogin">
-          <th mat-header-cell *matHeaderCellDef>
-            <select class="col-filter" (change)="applyFilter('canLogin', $any($event.target).value)">
-              <option value="">All</option>
-              <option value="yes">Enabled</option>
-              <option value="no">Disabled</option>
-            </select>
-          </th>
-        </ng-container>
-        <ng-container matColumnDef="filter-actions"><th mat-header-cell *matHeaderCellDef></th></ng-container>
-
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let u">{{ u.name || '—' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef>Email</th>
-          <td mat-cell *matCellDef="let u">{{ u.email }}</td>
-        </ng-container>
-        <ng-container matColumnDef="phone">
-          <th mat-header-cell *matHeaderCellDef>Phone</th>
-          <td mat-cell *matCellDef="let u" style="width:130px">{{ u.phoneNumber || '—' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="address">
-          <th mat-header-cell *matHeaderCellDef>Address</th>
-          <td mat-cell *matCellDef="let u" style="max-width:200px;white-space:normal;font-size:.85rem">{{ u.location || '—' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="joined">
-          <th mat-header-cell *matHeaderCellDef>Joined</th>
-          <td mat-cell *matCellDef="let u">{{ u.createdAt | date:'mediumDate' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="canLogin">
-          <th mat-header-cell *matHeaderCellDef>Can Login</th>
-          <td mat-cell *matCellDef="let u">
-            <mat-slide-toggle [checked]="u.canLogin" (change)="toggleLogin(u, $event.checked)"></mat-slide-toggle>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let u" style="white-space:nowrap">
-            <button mat-icon-button color="primary" matTooltip="Edit customer" (click)="startEdit(u)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button matTooltip="Print" (click)="printRow(u)">
-              <mat-icon>print</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" matTooltip="Delete" (click)="deleteUser(u.id)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="cols"></tr>
-        <tr mat-header-row *matHeaderRowDef="filterCols" class="filter-row"></tr>
-        <tr mat-row *matRowDef="let row; columns: cols;" [class.editing-row]="row.id === editingUser?.id"></tr>
-      </table>
-
-      @if (dataSource.data.length === 0) {
-        <p style="padding:16px;color:#888">No customers registered yet.</p>
+        @if (dataSource.data.length === 0) {
+          <div class="empty-note"><mat-icon style="font-size:36px;color:#c5cae9">people_outline</mat-icon><p>No customers registered yet.</p></div>
+        }
+        <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
       }
-
-      <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
     </div>
   `,
   styles: [`
-    .full-width { width: 100%; }
-    mat-form-field { width:100%; }
-    .row-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px; }
-    .row-last { display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px; margin-bottom:16px; align-items:center; }
-    .checkbox-cell { display:flex; align-items:center; padding-top:4px; }
-    .form-error { color:red; font-size:.85rem; margin:4px 0; }
-    .editing-row { background: #f3e5f5; }
-    mat-paginator { border-top: 1px solid rgba(0,0,0,.12); }
-    .filter-row th { padding:4px 8px !important; }
-    .col-filter { width:100%; border:1px solid #ccc; border-radius:4px; padding:4px 6px; font-size:.8rem; outline:none; box-sizing:border-box; background:#fff; }
-    .col-filter:focus { border-color:#7b1fa2; }
-    @media(max-width:900px) { .row-4 { grid-template-columns:1fr 1fr; } .row-last { grid-template-columns:1fr 1fr; } }
+    .page-banner {
+      background: linear-gradient(135deg, #1a237e, #3f51b5);
+      padding: 24px 28px; display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; color: #fff;
+    }
+    .page-banner h1 { margin: 0; font-size: 1.6rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .page-banner h1 mat-icon { color: #ffc107; }
+    .page-banner p { margin: 4px 0 0; font-size: .88rem; opacity: .8; color: #fff; }
+    .banner-actions { display: flex; gap: 10px; }
+    .export-btn { border-color: rgba(255,255,255,.5) !important; color: #fff !important; border-radius: 8px !important; }
+    .page-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    .edit-card {
+      background: #fff; border-radius: 12px; border-left: 5px solid #7b1fa2;
+      padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(63,81,181,.15);
+    }
+    .edit-card h3 { margin: 0 0 16px; font-size: 1rem; display: flex; align-items: center; gap: 8px; color: #7b1fa2; }
+    .row-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 8px; }
+    .row-last { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 16px; align-items: center; }
+    .checkbox-cell { display: flex; align-items: center; padding-top: 4px; }
+    .form-error { color: #f44336; font-size: .85rem; margin: 4px 0; }
+    mat-form-field { width: 100%; }
+    .save-edit-btn { background: #7b1fa2 !important; color: #fff !important; border-radius: 8px !important; }
+
+    .filter-bar {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+      background: #fff; padding: 14px 16px; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(63,81,181,.10);
+    }
+    .filter-input {
+      flex: 1; min-width: 120px; border: 1.5px solid #e8eaf6; border-radius: 8px;
+      padding: 7px 10px; font-size: .85rem; outline: none; font-family: inherit;
+      transition: border-color .2s;
+    }
+    .filter-input:focus { border-color: #3f51b5; }
+    .filter-select { background: #fff; cursor: pointer; }
+
+    .table-wrapper { overflow-x: auto; border-radius: 12px; box-shadow: 0 2px 8px rgba(63,81,181,.10); }
+    .customers-table { width: 100%; background: #fff; }
+    .editing-row { background: #f3e5f5 !important; }
+    .muted-cell { color: #666; font-size: .85rem; }
+    .actions-cell { white-space: nowrap; }
+    .action-edit { color: #7b1fa2 !important; }
+    .action-print { color: #666 !important; }
+    .action-delete { color: #f44336 !important; }
+    .empty-note { text-align: center; padding: 32px; color: #888; }
+
+    @media (max-width: 900px) {
+      .row-4 { grid-template-columns: 1fr 1fr; }
+      .row-last { grid-template-columns: 1fr 1fr; }
+      .page-container { padding: 16px 10px; }
+    }
   `]
 })
 export class CustomerManagementComponent implements OnInit, AfterViewInit {
@@ -181,6 +216,8 @@ export class CustomerManagementComponent implements OnInit, AfterViewInit {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
+  loading = signal(true);
+  skeletonRows = Array(5).fill(0);
   dataSource = new MatTableDataSource<User>([]);
   cols = ['name', 'email', 'phone', 'address', 'joined', 'canLogin', 'actions'];
   filterCols = this.cols.map(c => `filter-${c}`);
@@ -217,7 +254,8 @@ export class CustomerManagementComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() { this.dataSource.paginator = this.paginator; }
 
   load() {
-    this.api.getUsers('Customer').subscribe(u => { this.dataSource.data = u; });
+    this.loading.set(true);
+    this.api.getUsers('Customer').subscribe(u => { this.dataSource.data = u; this.loading.set(false); });
   }
 
   applyFilter(col: string, value: string) {

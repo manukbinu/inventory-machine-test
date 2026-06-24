@@ -29,7 +29,7 @@ public class AuthService(AppDbContext db, IConfiguration config)
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        return new AuthResponse(GenerateToken(user), user.Role.ToString(), user.Id, user.Name, user.Email, user.IsApproved);
+        return new AuthResponse(GenerateToken(user), user.Role.ToString(), user.Id, user.Name, user.Email, user.IsApproved, user.PhoneNumber, user.Location);
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest req)
@@ -43,7 +43,7 @@ public class AuthService(AppDbContext db, IConfiguration config)
         if (!BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid credentials.");
 
-        return new AuthResponse(GenerateToken(user), user.Role.ToString(), user.Id, user.Name, user.Email, user.IsApproved);
+        return new AuthResponse(GenerateToken(user), user.Role.ToString(), user.Id, user.Name, user.Email, user.IsApproved, user.PhoneNumber, user.Location);
     }
 
     private string GenerateToken(User user)

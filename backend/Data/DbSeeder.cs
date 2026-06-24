@@ -6,6 +6,21 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
+        // Patch seed image URLs on existing products (safe to run every startup)
+        var seedImages = new Dictionary<string, string>
+        {
+            ["Wireless Mouse"]   = "/uploads/seed-product-1.jpg",
+            ["USB-C Cable"]      = "/uploads/seed-product-2.jpg",
+            ["Basmati Rice 5kg"] = "/uploads/seed-product-3.jpg"
+        };
+        foreach (var (name, url) in seedImages)
+        {
+            var p = db.Products.FirstOrDefault(x => x.Name == name && x.ImageUrl == null);
+            if (p != null) { p.ImageUrl = url; }
+        }
+        if (db.ChangeTracker.HasChanges())
+            await db.SaveChangesWithoutAuditAsync();
+
         if (db.Users.Any()) return;
 
         var now = DateTime.UtcNow;
@@ -62,6 +77,7 @@ public static class DbSeeder
             Unit = "pcs",
             OpeningStock = 100,
             CurrentStock = 100,
+            ImageUrl = "/uploads/seed-product-1.jpg",
             CategoryId = electronics.Id,
             SupplierId = supplier.Id,
             CreatedAt = now,
@@ -77,6 +93,7 @@ public static class DbSeeder
             Unit = "pcs",
             OpeningStock = 200,
             CurrentStock = 200,
+            ImageUrl = "/uploads/seed-product-2.jpg",
             CategoryId = electronics.Id,
             SupplierId = supplier.Id,
             CreatedAt = now,
@@ -92,6 +109,7 @@ public static class DbSeeder
             Unit = "bag",
             OpeningStock = 50,
             CurrentStock = 50,
+            ImageUrl = "/uploads/seed-product-3.jpg",
             CategoryId = grocery.Id,
             SupplierId = supplier.Id,
             CreatedAt = now,

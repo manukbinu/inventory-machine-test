@@ -105,7 +105,7 @@ public class OrderService(AppDbContext db, StockService stockService, Notificati
         return order;
     }
 
-    public async Task UpdateStatusAsync(int orderId, string newStatusStr, int userId)
+    public async Task UpdateStatusAsync(int orderId, string newStatusStr, int userId, string callerRole = "Admin")
     {
         if (!Enum.TryParse<OrderStatus>(newStatusStr, true, out var newStatus))
             throw new ArgumentException($"Invalid status: {newStatusStr}");
@@ -118,6 +118,10 @@ public class OrderService(AppDbContext db, StockService stockService, Notificati
 
         if (!AllowedTransitions[order.Status].Contains(newStatus))
             throw new InvalidOperationException($"Cannot transition from {order.Status} to {newStatus}.");
+
+        // Suppliers can only move orders that are already Confirmed — Admin must confirm first
+        if (callerRole == "Supplier" && order.Status == OrderStatus.Pending)
+            throw new InvalidOperationException("Order must be confirmed by an admin before suppliers can update it.");
 
         order.Status = newStatus;
         await db.SaveChangesAsync();
